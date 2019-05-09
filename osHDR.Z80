@@ -1,7 +1,8 @@
 ;     File created by MakeZ80Source on Mon Sep 17 16:25:47 EDT 2018 from:
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\osHeader.asm
-; osHeader.Z80
+; osHDR.Z80
 
+; 2019-05-08 Modified for Cromemco (SLR Systems) Z80ASM Assembler
 ; 2018-12-28 Changed BDOSEntry to remove dead space in BDOS
 ; 2017-03-02 Refactored the CP/M Suite
 
