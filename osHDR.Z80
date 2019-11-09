@@ -2,6 +2,7 @@
 ;     C:\Users\admin\Dropbox\Resources\CPM\CurrentOS\8080\osHeader.asm
 ; osHDR.Z80
 
+; 2019-11-08 Modified for ZMAC RELOCATING MACRO ASSEMBLERand ZML LINKER
 ; 2019-05-08 Modified for Cromemco (SLR Systems) Z80ASM Assembler
 ; 2018-12-28 Changed BDOSEntry to remove dead space in BDOS
 ; 2017-03-02 Refactored the CP/M Suite
@@ -9,49 +10,48 @@
 ; Contains the Equates used by the CP/M system
 
 ;------------------------Page Zero Constants ---------------------------------
-RAM		EQU	0			; Start of RAM ( and the Base page)
+RAM				EQU		0					; Start of RAM ( and the Base page)
 
-WarmBoot	EQU	RAM + 0			; JMP instruction to BIOS warm boot
-BIOSPAGE	EQU	RAM + 2			; BIOS Jump Vector Page
-IOBYTE		EQU	RAM + 3			; Input/Output redirection byte
+WarmBoot		EQU		RAM + 0				; JMP instruction to BIOS warm boot
+BIOSPAGE		EQU		RAM + 2				; BIOS Jump Vector Page
+IOBYTE			EQU		RAM + 3				; Input/Output redirection byte
 
-Page0User	EQU	RAM + 4			; Current user ( bits 7-4)
-Page0Disk	EQU	Page0User		; Default logical disk (bits 0-3)
+Page0User		EQU		RAM + 4				; Current user ( bits 7-4)
+Page0Disk		EQU		Page0User			; Default logical disk (bits 0-3)
 
-BDOSE		EQU	RAM + 5		; Contains a JMP to BDOS entry
-TopRAM		EQU	BDOSE+2		; Top page of usable RAM
+BDOSE			EQU		RAM + 5				; Contains a JMP to BDOS entry
+TopRAM			EQU		BDOSE+2				; Top page of usable RAM
 
-FCB1		EQU	RAM + 05CH		; File Control Block #1
-FCB2		EQU	FCB1 + 16		; File Control Block #2
+FCB1			EQU		RAM + 05CH			; File Control Block #1
+FCB2			EQU		FCB1 + 16			; File Control Block #2
 
-ComTail	EQU	RAM + 080H		; Complete command tail
-ComTailCount	EQU	ComTail		; Count of the  chars in tail
-ComTailChars	EQU	ComTailCount + 1	; Complete Command tail up-cased
+ComTail			EQU		RAM + 080H			; Complete command tail
+ComTailCount	EQU		ComTail				; Count of the  chars in tail
+ComTailChars	EQU		ComTailCount + 1	; Complete Command tail up-cased
 ;------------------------Page Zero Constants ---------------------------------
 
-DMABuffer			EQU		RAM + 080H			; Default "DMA" address used as buffer
+DMABuffer		EQU		RAM + 080H			; Default "DMA" address used as buffer
 ;-----------------------------------------------------------------------
-TPA					EQU		RAM + 0100H		; Start of Transient program Area
+TPA				EQU		RAM + 0100H		; Start of Transient program Area
 ;-----------------------------------------------------------------------
-END_OF_FILE			EQU		1AH				; end of file
+END_OF_FILE	EQU		1AH					; end of file
 ;-----------------------------------------------------------------------
 
 ;--------------- CP/M Constants -----------------------------------------
 
-CCPLength			EQU		0800H			; Constant
-BDOSLength			EQU		0E00H			; Constant 0E00H
-BIOSLength			EQU		0A00H			; Constant 0900H
+CCPLength		EQU		0800H				; Constant
+BDOSLength		EQU		0E00H				; Constant 0E00H
+BIOSLength		EQU		0A00H				; Constant 0900H
 
-LengthInBytes		EQU		CCPLength + BDOSLength + BIOSLength
-LengthInK			EQU		(LengthInBytes/1024) + 1
+LengthInBytes	EQU		CCPLength + BDOSLength + BIOSLength
+LengthInK		EQU		(LengthInBytes/1024) + 1
 
-MemorySize			EQU		64
+MemorySize		EQU		64
 
-CCPEntry			EQU		(MemorySize * 1024) - LengthInBytes
+CCPEntry		EQU		(MemorySize * 1024) - LengthInBytes
 
-BDOSBase			EQU		CCPEntry + CCPLength
-BDOSEntry			EQU		BDOSBase
+BDOSBase		EQU		CCPEntry + CCPLength
+BDOSEntry		EQU		BDOSBase
 
-BIOSBase			EQU		BDOSBase + BDOSLength
-BIOSStart			EQU		CCPEntry + CCPLength + BDOSLength
-;-----------------------------------------------------------------------
+BIOSBase		EQU		BDOSBase + BDOSLength
+BIOSStart		EQU		CCPEntry + CCPLength + BDOSLength
