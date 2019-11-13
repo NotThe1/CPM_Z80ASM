@@ -1,0 +1,147 @@
+
+;**************************************************************************
+;
+; File Name             : MCOPY1.Z80
+; Author                : Frank Martyn
+; Creation Date         : 2019-11-11
+;
+; Assembler Name        : ZMAC v 1.7
+; Linker                : ZML  v 2.0
+;
+; Amendment Record
+; *****************
+; Name          Date            Details of Amendment
+; ----          ----            ---------------------
+; Frank Martyn  2019-11-13     Incorporated MAC_SC, Macros for System Calls
+; Frank Martyn  2019-11-11     Initial edit for ZMAC/ZML
+; 
+; Module Function
+; ***************
+;       Utility - file-to-file copy program
+;
+; Usage
+; ***************
+;       mcopy1 SourceFile DestinationFile
+
+;
+
+                NAME    MCOPY1
+
+;               ===============
+;               Global symbols.
+;               ===============
+
+
+;               ===================
+;               External References
+;               ===================
+
+;               n o n e  PUBLIC  SONG,TITLE,TEMPO
+
+;               ==============
+;               External Files
+;               ==============
+
+               .XLIST
+                $include     MAC-SC.LIB
+               .LIST
+
+
+;               =============
+;               Local Equates
+;               =============
+
+BOOT    EQU       0000h              ; system reboot
+
+FCB1    EQU       005ch              ; first file name
+FCBsrc  EQU       FCB1               ; source fcb
+FCB2    EQU       006ch              ; second file name
+cpmBuff EQU       0080h              ; default buffer
+TPA     EQU       0100h              ; beginning of TPA;
+
+;**************************************************************************
+;***                                                                    ***
+;**************************************************************************
+
+                .XALL
+        ORG       TPA
+Start:
+        LD        SP,stack           ; set local stack 
+        LD        BC,0016
+        LD        HL,FCB2
+        LD        DE,FCBdst
+        LDIR                         ; Move half FCB
+        
+; name has been removed, zero cr 
+        XOR        A                 ; a = 00h 
+        LD        (CurRec),A         ; current rec = 0
+; source and dest fcb's ready 
+
+        FileOpen  FCBsrc             ; Open Source File
+
+        LD        DE,$NoSrc          ; ready message 
+        INC       A                  ; 255 becomes 0 
+        CALL      Z, Exit            ; done if no file
+
+; source file open, prep dest 
+        FileDel   FCBdst
+
+        FileMak   FCBdst
+		
+        LD        DE,$NoDirSpc       ; ready message 
+        INC       A                  ; 255 becomes 0 
+        CALL      Z, Exit            ; done if no dir space
+
+;    source file open, dest file open
+;    copy until end of file on source
+
+Copy:
+
+		SeqRd     FCBsrc
+		
+        OR        A                  ; end of file? 
+        JP        NZ,  FileEOF       ; skip write if so
+; not end of file, write the record 
+
+        SeqWr     FCBdst
+ 
+        LD        DE,$NoFilSpc       ; ready message 
+        OR        A                  ; 00 if write ok 
+        CALL      NZ,Exit            ; end if so 
+        JP        Copy               ; loop until eof
+;
+FileEOF:
+
+        FileCls   FCBdst		     ; Close the File
+
+        LD        HL,$WrtProt        ; ready message 
+        INC       A                  ; 255 becomes 00 
+        CALL      Z,Exit             ; shouldn't happen
+; Copy operation complete, end 
+        LD        DE,$Done           ; ready OK message
+;
+Exit:
+; write message given in de, reboot 
+
+        PrtStr
+
+        JP        BOOT               ; reboot system
+;
+
+; console messages 
+$NoSrc:    DB  'no source file$' 
+$NoDirSpc: DB  'no directory space$' 
+$NoFilSpc: DB  'out of dat space$' 
+$WrtProt:  DB  'Write protected?$' 
+$Done:     DB  'Copy complete$'
+;
+;    data areas 
+FCBdst:
+        DS        32                            ; dest fcb 
+CurRec:
+
+; bottom of stack 
+        DS        32                            ; 16 level stack
+stack: 
+
+End:
