@@ -1,0 +1,213 @@
+;**************************************************************************
+;
+; File Name             : MAC-SC.LIB
+; Author                : Frank Martyn
+; Creation Date         : 2019-11-12
+;
+; Assembler Name        : ZMAC v 1.7
+; Linker                : ZML  v 2.0
+;
+; Amendment Record
+; *****************
+; Name          Date            Details of Amendment
+; ----          ----            ---------------------
+;
+; Frank Martyn  2019-11-12     Initial edit
+;
+;
+; Module Function
+; ***************
+;       Utility - Library of System Call Macros
+;
+
+
+;
+
+                NAME    MAC-SC
+
+;               ===============
+;               Global symbols.
+;               ===============
+
+
+
+;               ============
+;               Local Macros
+;               ============
+
+SysReset        Macro                      ;; System Reset
+                LD      C,@Reset           ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+ConIn           Macro                      ;; Console In
+                LD      C,@ConIn           ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+ConOut          Macro   outChar            ;; Console Out
+
+                IFNB    <outChar>          ;; Skip if no argument
+                LD      E,outChar          ;; character to output
+				ENDIF
+				
+                LD      C,@ConOut          ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+RdrIn           Macro                      ;; Reader In
+                LD      C,@RdrIn           ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+PchOut          Macro   outChar            ;; Punch Out
+
+                IFNB    <outChar>          ;; Skip if no argument
+                LD      E,outChar          ;; character to output
+				ENDIF
+				
+                LD      C,@PchOut          ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+LstOut          Macro   outChar            ;; List Out
+
+                IFNB    <outChar>          ;; Skip if no argument
+                LD      E,outChar          ;; character to output
+				ENDIF
+				
+                LD      C,@LstOut          ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+ConInDir        Macro                      ;; Direct Console In 
+                LD      E,0FFH             ;; character to output
+                LD      C,@ConDir          ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+ConOutDir       Macro   outChar            ;; Direct Console Out
+
+                IFNB    <outChar>          ;; Skip if no argument
+                LD      E,outChar          ;; character to output
+				ENDIF
+				
+                LD      C,@ConDir          ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+GetIOB          Macro                      ;; Get IO Byte
+                LD      C,@GetIOB          ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+SetIOB          Macro   outChar            ;; Set IO Byte
+
+                IFNB    <outChar>          ;; Skip if no argument
+                LD      E,outChar          ;; character to output
+				ENDIF
+				
+                LD      C,@SetIOB          ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+PrtStr          MACRO	strAdd             ;; Print String
+
+                IFNB    <strAdd>           ;; Skip if no argument
+                LD      DE,strAdd          ;; Sys call argument
+                ENDIF
+				
+                LD      C,@PrtStr         ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+
+FileOpen        MACRO	FCBadd             ;; Open File
+
+                IFNB    <FCBadd>           ;; Skip if no argument
+                LD      DE,FCBadd          ;; Sys call argument
+                ENDIF
+				
+                LD      C,@FileOpn         ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+FileCls        MACRO	FCBadd             ;; Close File
+
+                IFNB    <FCBadd>           ;; Skip if no argument
+                LD      DE,FCBadd          ;; Sys call argument
+                ENDIF
+				
+                LD      C,@FileCls         ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+FileDel        MACRO	FCBadd             ;; Delete File
+
+                IFNB    <FCBadd>           ;; Skip if no argument
+                LD      DE,FCBadd          ;; Sys call argument
+                ENDIF
+				
+                LD      C,@FileDel         ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+
+SeqRd           MACRO	FCBadd             ;; Sequential Read
+
+                IFNB    <FCBadd>           ;; Skip if no argument
+                LD      DE,FCBadd          ;; Sys call argument
+                ENDIF
+				
+                LD      C,@SeqRd           ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+
+SeqWr           MACRO	FCBadd             ;; Sequential Write
+
+                IFNB    <FCBadd>           ;; Skip if no argument
+                LD      DE,FCBadd          ;; Sys call argument
+                ENDIF
+				
+                LD      C,@SeqWr           ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+
+FileMak        MACRO	FCBadd             ;; Make File
+
+                IFNB    <FCBadd>           ;; Skip if no argument
+                LD      DE,FCBadd          ;; Sys call argument
+                ENDIF
+				
+                LD      C,@FileMak         ;; Sys call number
+                CALL    @BDOS              ;; Make the system call
+                ENDM
+
+
+;               =============
+;               Local Equates
+;               =============
+
+@BOOT           EQU     0000h              ; system reboot
+
+@BDOS           EQU     0005h              ; BDOS entry point
+@Reset          EQU     00H                ; System Reset
+@ConIn          EQU     01H                ; Console In
+@ConOut         EQU     02H                ; Console Out
+@RdrIn          EQU     03H                ; Read Reader
+@PchOut         EQU     04H                ; Punch Out
+@LstOut         EQU     05H                ; List Out
+@ConDir         EQU     06H                ; Console In/Out Direct
+@GetIOB         EQU     08H                ; Get IO Byte
+@SetIOB         EQU     07H                ; Set IO Byte
+@PrtStr         EQU     09H                ; Print String
+@FileOpn        EQU     0FH                ; Open File
+@FileCls        EQU     10H                ; Close File
+@FileDel        EQU     13H                ; Delete File
+@SeqRd          EQU     14H                ; Sequential Read
+@SeqWr          EQU     15H                ; Sequential Write
+@FileMak        EQU     16H                ; MMke File
+
+;**************************************************************************

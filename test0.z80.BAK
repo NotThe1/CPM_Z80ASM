@@ -1,4 +1,4 @@
-; test.z80
+; test0.z80
 
                .XLIST
                 include     MAC-SC.LIB

@@ -1,0 +1,66 @@
+;**************************************************************************
+;
+; File Name             : MCOPY1.LIB
+; Author                : Frank Martyn
+; Creation Date         : 2019-11-12
+;
+; Assembler Name        : ZMAC v 1.7
+; Linker                : ZML  v 2.0
+;
+; Amendment Record
+; *****************
+; Name          Date            Details of Amendment
+; ----          ----            ---------------------
+;
+; Frank Martyn  2019-11-14     Initial edit
+;
+;
+; Module Function
+; ***************
+;       Utility - Library of  Macros
+;
+
+
+;
+
+            NAME      MCOPY1_LIB
+
+
+
+
+;               ============
+;               Local Macros
+;               ============
+
+
+CopyMem     MACRO     source,dest,length     ;; copy data in memory
+            LD        HL,source              ;; load 'from'
+            LD        DE,dest                ;; load 'to'
+            LD        BC,length              ;; load 'length'
+            LDIR                             ;; move the data
+            ENDM
+
+FillMem     MACRO     dest,length,value      ;; fill memory with data
+            LD        HL,dest                ;; point to start
+            IFNB      <value>                ;;  if argument
+            LD        (HL),value             ;; load value
+            ELSE
+            LD        (HL),00                ;; else load 00
+            ENDIF
+            LD        DE,dest + 1            ;; set DE to destination
+            LD        BC,length -1           ;; load LENGTH -1
+            LDIR                             ;; propagate the data
+            ENDM
+
+
+
+
+;               =============
+;               Local Equates
+;               =============
+
+;@BOOT           EQU     0000h              ; system reboot
+
+
+
+;**************************************************************************
