@@ -31,7 +31,16 @@
 ;               ============
 ;               Local Macros
 ;               ============
-
+SHIFTHL_R   MACRO 	bits
+            LOCAL   loop
+            PUSH    BC					;; save the register
+            LD       B,bits           ;; set up count
+loop
+            SRL		H					;; 0->|7-->0|->CY
+            RR      L                   ;; CY->|7-->0|-CY
+			DJNZ	loop               ;; loop if not done
+			POP		BC					;; restore register
+			ENDM
 
 CopyMem     MACRO     source,dest,length     ;; copy data in memory
             LD        HL,source              ;; load 'from'

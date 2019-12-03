@@ -194,7 +194,7 @@ SetDMA      MACRO     DMAaddress             ;; Set DMA
 ;               =============
 ;               Local Equates
 ;               =============
-@RecSize    EQU       0080H                  ; CPM Record Size
+@RecSize	EQU		0080H				; CPM Record Size
 
 @BOOT       EQU       0000h                  ; system reboot
 
