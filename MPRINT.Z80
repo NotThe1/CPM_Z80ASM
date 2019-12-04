@@ -1,12 +1,11 @@
-; MCOPY.Z80
+; MPRINT.Z80
 
 
 ; Amendment Record
 ; *****************
 ; Name          Date            Details of Amendment
 ; ----          ----            ---------------------
-; Frank Martyn  2019-12-03     Version 1 Full working  iteration
-; Frank Martyn  2019-11-13     Incorporated MAC_SC, Macros for System Calls
+; Frank Martyn  2019-12-03     Initial coding
 
 
 ;               ==============
