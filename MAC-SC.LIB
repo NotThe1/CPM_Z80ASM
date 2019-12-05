@@ -132,7 +132,8 @@ FileOpen    MACRO     FCBadd                 ;; Open File
             CALL      @BDOS                  ;; Make the system call
             ENDM
 
-FileCls     MACRO     FCBadd                 ;; Close File
+
+     MACRO     FCBadd                 ;; Close File
 
             IFNB      <FCBadd>               ;; Skip if no argument
             LD        DE,FCBadd              ;; Sys call argument

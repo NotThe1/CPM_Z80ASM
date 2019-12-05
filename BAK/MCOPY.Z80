@@ -54,7 +54,7 @@ WriteStart0:
             LD        (EOF),A                ; set EOF to true
 WriteStart:
 ;            LD        HL,(RecsRead)
-                                             ;           DEC       HL
+ ;           DEC       HL
 ;            LD        (RecsRead),HL          ; adjust for actual records read
             LD        HL,workBuff            ; set buffer pointer to beginning
             LD        (NextRecLoc),HL
