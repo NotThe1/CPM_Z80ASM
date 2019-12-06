@@ -5,6 +5,7 @@
 ; *****************
 ; Name          Date            Details of Amendment
 ; ----          ----            ---------------------
+; Frank Martyn  2019-12-06     Version 1.1 Small buffer coded & tested
 ; Frank Martyn  2019-12-03     Version 1 Full working  iteration
 ; Frank Martyn  2019-11-13     Incorporated MAC_SC, Macros for System Calls
 
@@ -35,29 +36,30 @@ TRUE        EQU       -1                     ; True
             ORG       TPA
 
 START:
-            LD        SP,Stack
-            CALL      setupFiles             ; set up Files
-            CALL      setParams              ; determine buffer size & Records
+            LD        SP,stack
+            CALL      SetupFiles             ; set up Files
+            CALL      SetParams              ; determine buffer size & Records
 ReadLoop0:
             CALL      InitParams             ; init pointers and counts
 ReadLoop:
             SeqRd     FCBsrc                 ; read a record
             OR        A
             JP        NZ,WriteStart0         ; jump if at end-of-file
-            CALL      updReadParams
+            CALL      UpdReadParams
             JR        NZ,ReadLoop            ; loop if still room in buffer
             LD        HL,(BuffRecMax)
-            LD        (AvailRecs),HL         ; reset available records
+            LD        (availRecs),HL         ; reset available records
             JR        WriteStart
 WriteStart0:
+
+            CALL      UpdReadParams
+
+
             LD        A,TRUE
             LD        (EOF),A                ; set EOF to true
 WriteStart:
-;            LD        HL,(RecsRead)
- ;           DEC       HL
-;            LD        (RecsRead),HL          ; adjust for actual records read
             LD        HL,workBuff            ; set buffer pointer to beginning
-            LD        (NextRecLoc),HL
+            LD        (nextRecLoc),HL
             SetDMA    workBuff               ; reset DMA to start of the buffer
 
 WriteLoop:
@@ -74,82 +76,72 @@ WriteLoop:
             FileCls   FCBsrc
             FileCls   FCBdst
             LD        DE,$Done
-            JP        exit
+            JP        Exit
             JP        WBOOT                  ; exit, via warm boot
 
 
 ; read the whole file
-FileEOF:                                     ;
+FileEOF:
             LD        DE,$FileEOF
-            JP        exit
+            JP        Exit
 ; disk was full
 DiskFull:
             LD        DE,$DiskFull
-            JP        exit
+            JP        Exit
 
-setParams:
+SetParams:
             LD        HL,(0006)              ; get BDOS Start
             LD        DE,workBuff            ; get start of work buffer
-            LD        (NextRecLoc),DE        ; establish start of buffer
+            LD        (nextRecLoc),DE        ; establish start of buffer
             OR        A                      ; reset CY flag
             SBC       HL,DE                  ; working buffer size
+            LD        (buffBytMax),HL        ; save size of buffer
             SHIFTHL_R 7                      ; divide by Record size (080H)
-
-            LD        HL,3
-
             LD        (BuffRecMax),HL        ; save the number of records
-;           LD        (AvailRecs),HL         ; save available number of records
-            RET
 
-InitParams:
 ; clear the buffer
             LD        HL,workBuff
             LD        (HL),00H
             LD        DE, workBuff+1
-            LD        BC,(BuffBytMax)
+            LD        BC,(buffBytMax)
             DEC       BC
             LDIR
-
-            LD        HL,(BuffRecMax)
-            LD        (AvailRecs),HL         ; reset available records
-
-            SetDMA    workBuff               ; init the DMA
-
-            LD        DE,0000H
-            LD        (RecsRead),DE          ; initialize read record count
-            LD        DE,workBuff            ; get start of work buffer
-            LD        (NextRecLoc),DE        ; establish start of buffer
-
             RET
 
-setupFiles:
+InitParams:
+            LD        HL,(BuffRecMax)
+            LD        (availRecs),HL         ; reset available records
+            SetDMA    workBuff               ; init the DMA
+            LD        DE,0000H
+            LD        (recsRead),DE          ; initialize read record count
+            LD        DE,workBuff            ; get start of work buffer
+            LD        (nextRecLoc),DE        ; establish start of buffer
+            RET
+
+SetupFiles:
             CopyMem   FCB2,FCBdst,010H       ; setup destination FCB
 
             XOR       A                      ;
-            LD        (CurRec),A             ; Set current rec = 0
+            LD        (curRec),A             ; Set current rec = 0
 ; source and destination  FCBs ready
             FileOpen  FCBsrc                 ; Open Source File
-
             LD        DE,$NoSrc              ; ready message
             INC       A                      ; 255 becomes 0
-            CALL      Z, exit                ; done if no file
+            CALL      Z, Exit                ; done if no file
 ; source file open, prep destination
             FileDel   FCBdst                 ; Delete Destination
-
             FileMak   FCBdst                 ; Create Destination
-
             LD        DE,$NoDirSpc           ; ready message
             INC       A                      ; 255 becomes 0
-            CALL      Z, exit                ; done if no dir space
+            CALL      Z, Exit                ; done if no dir space
             RET
 
-
-updateDMA:
+UpdateDMA:
 ; Update current buffer position
-            LD        HL,(NextRecLoc)        ; get current position
+            LD        HL,(nextRecLoc)        ; get current position
             LD        DE,@RecSize            ; get CPM record Size
             ADD       HL,DE                  ; add to get target position
-            LD        (NextRecLoc),HL        ; update the pointer
+            LD        (nextRecLoc),HL        ; update the pointer
 ; Set DMA to match buffer position
             EX        DE,HL                  ; prepare for sys call
             LD        C,@SetDMA              ; Sys call number
@@ -157,16 +149,16 @@ updateDMA:
             RET
 
 ; will return ZFlag set if buffer exhausted
-updReadParams:
-            CALL      updateDMA              ; adjust buffer pointer & DMA
+UpdReadParams:
+            CALL      UpdateDMA              ; adjust buffer pointer & DMA
 ; Keep count of the records read
-            LD        HL,(RecsRead)          ; keep count of
+            LD        HL,(recsRead)          ; keep count of
             INC       HL                     ;  of the actual number
-            LD        (RecsRead),HL          ;  of records read
+            LD        (recsRead),HL          ;  of records read
 ; Check if there is still room in the buffer
-            LD        HL,(AvailRecs)         ; how many records left in buffer
+            LD        HL,(availRecs)         ; how many records left in buffer
             DEC       HL
-            LD        (AvailRecs),HL         ; save for later
+            LD        (availRecs),HL         ; save for later
             LD        A,L
             CP        0
             RET       NZ                     ; exit if L != 0
@@ -175,11 +167,11 @@ updReadParams:
 
 ; will return ZFlag set if buffer exhausted
 updWriteParams:
-            CALL      updateDMA              ; adjust buffer pointer & DMA
+            CALL      UpdateDMA              ; adjust buffer pointer & DMA
 ; Keep count of the records read
-            LD        HL,(RecsRead)          ; keep count of
+            LD        HL,(recsRead)          ; keep count of
             DEC       HL                     ;  of the actual number
-            LD        (RecsRead),HL          ;  of records written
+            LD        (recsRead),HL          ;  of records written
             LD        A,L
             CP        0
             RET       NZ                     ; exit if L != 0
@@ -188,7 +180,7 @@ updWriteParams:
 
 
 ; write message given in DE, then reboot
-exit:
+Exit:
             PrtStr
             JP        WBOOT                  ; exit, via warm boot
 
@@ -196,32 +188,32 @@ exit:
 ;                 Constants
 ;               =============
 ; console messages
-$NoSrc:     DB        'no source file$'
-$NoDirSpc:  DB        'no directory space$'
-$DiskFull:  DB        'out of data space$'
+$NoSrc:     DB        'No source file$'
+$NoDirSpc:  DB        'No directory space$'
+$DiskFull:  DB        'Out of data space$'
 $WrtProt:   DB        'Write protected?$'
 $Done:      DB        'Copy complete$'
 $FileEOF:   DB        'File EOF$'
-$FullBuff:  DB        'Buffer Full'
+$FullBuff:  DB        'Buffer Full$'
 
 ;               =============
 ;                   Data
 ;               =============
 FCBdst:
             DS        32                     ; destination fcb
-CurRec:
+curRec:                                      ; FCB current record
 
-BuffBytMax: DS        2                      ; current buffer Record size
+buffBytMax: DS        2                      ; current buffer Record size
 BuffRecMax: DS        2                      ; current buffer Record size
-AvailRecs:  DS        2                      ; current buffer available in Buffer
-NextRecLoc: DS        2                      ; Location for next record
-RecsRead    DS        2                      ; actual number of records read
+availRecs:  DS        2                      ; current buffer available in Buffer
+nextRecLoc: DS        2                      ; Location for next record
+recsRead    DS        2                      ; actual number of records read
 EOF:        DB        FALSE                  ; End of File
 label1:
             DS        stackSize              ; 16 level Stack
             ORG       (($/0100H)+1) * 0100H
 
-Stack:                                       ; top of Stack
+stack:                                       ; top of Stack
 
 workBuff:                                    ; start of working buffer
 
