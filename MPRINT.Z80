@@ -5,6 +5,7 @@
 ; *****************
 ; Name          Date            Details of Amendment
 ; ----          ----            ---------------------
+; Frank Martyn  2019-12-08      Working with large buffer
 ; Frank Martyn  2019-12-08      Working with small buffer
 ; Frank Martyn  2019-12-07      Initial   coding
 
@@ -142,9 +143,6 @@ InitParams:
 
 SetParams:
             LD        HL,(0006)              ; get BDOS Start
-;*
-            LD        HL,workBuff + 0180H    ; force size to 3 records
-;*
             LD        DE,workBuff            ; get start of work buffer
             LD        (nextRecLoc),DE        ; establish start of buffer
             OR        A                      ; reset CY flag
