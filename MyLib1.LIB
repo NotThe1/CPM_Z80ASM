@@ -1,0 +1,114 @@
+;**************************************************************************
+;
+; File Name             : MyLib1.LIB
+; Author                : Frank Martyn
+; Creation Date         : 2019-11-12
+;
+; Assembler Name        : ZMAC v 1.7
+; Linker                : ZML  v 2.0
+;
+; Amendment Record
+; *****************
+; Name          Date            Details of Amendment
+; ----          ----            ---------------------
+;
+; Frank Martyn  2019-12-14    PrtNL,PrtAcc
+; Frank Martyn  2019-12-13     Prt00,PrtNLT
+; Frank Martyn  2019-11-14     Initial edit
+;
+;
+; Module Function
+; ***************
+;       Library of Utilities
+
+;   PrtNL Prints a New Line. The registers are not saved
+
+;   Prt00 Prints a null terminated string pointed at by HL
+;     HL is not saved, but BC and DE are saved
+
+;   PrtNLT Prints a CR or LF terminated string pointed at by HL
+;     HL is not saved, but BC and DE are saved
+
+;   PrtAcc Prints string pointed at by HL, with terminator character in Acc
+;     HL is not saved, but BC and DE are saved
+
+
+;
+
+
+;
+
+             NAME       MyLib1
+
+;      ===============
+;      Global symbols.
+;      ===============
+
+             PUBLIC     Prt00,PrtNLT,PrtNL,PrtAcc
+
+;      n o n e
+
+;      ===================
+;      External Referances
+;      ===================
+
+;
+
+
+;      ==============
+;      External Files
+;      ==============
+
+;      =============
+;      Local Equates
+;      =============
+
+CR           EQU        0DH                  ; Carriage Return
+LF           EQU        0AH                  ; New Line
+BDOS         EQU        0005H                ; Dos entry
+LstOut       EQU        05H                  ; List Out
+;**************************************************************************
+
+PrtNLT:      LD         A,CR                 ; New Line
+             JR         PrtAcc               ; go to main part
+Prt00:
+             XOR        A                    ; put null into ACC
+; Called with HL pointing to  String, and ACC containg terminator
+PrtAcc:
+             PUSH       BC                   ; Save Reg
+             PUSH       DE                   ; Save Reg
+             PUSH       AF                   ; Save The Terminal character
+PrintLine:
+             POP        AF                   ; Get The Terminal character
+             LD         E,(HL)               ; put output char in E for sys call
+             CP         E                    ; is character the terminator?
+             JR         Z,PrintLineX         ; we are done if yes
+             PUSH       AF                   ; Save The Terminal character
+             INC        HL
+             PUSH       HL                   ; save next char position
+             LD         C,LstOut             ; Sys call number list out
+             CALL       BDOS                 ; output the character
+             POP        HL                   ; restore the pointer
+             JR         PrintLine            ; go back for more
+
+PrintLineX:                                  ; Exit
+             LD         A,CR                 ; Carriage Return
+             CP         E
+             CALL       Z,PrtNL              ; output crlf if yes
+             LD         A,LF                 ; New Line ?
+             CP         E
+             CALL       Z,PrtNL              ; output crlf if yes
+
+             POP        DE                   ; Restore Reg
+             POP        BC                   ; Restore Reg
+             RET                             ; Exit
+
+PrtNL:
+             LD         E,CR
+             LD         C,LstOut             ; Sys call number list out
+             CALL       BDOS                 ; output the New Line
+
+             LD         E,LF
+             LD         C,LstOut             ; Sys call number list out
+             CALL       BDOS                 ; output the New Line
+             RET

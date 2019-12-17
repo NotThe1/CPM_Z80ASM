@@ -12,7 +12,6 @@
 ; Name          Date            Details of Amendment
 ; ----          ----            ---------------------
 ;
-; Frank Martyn  2019-11-12     Added @FCB1 and @FCB2
 ; Frank Martyn  2019-11-12     Initial edit
 ;
 ;
@@ -29,6 +28,12 @@
 ;               ===============
 ;               Global symbols.
 ;               ===============
+             PUBLIC     @RecSize,@BOOT,@BDOS,@TPA,@FCB1,@FCB2
+             PUBLIC     @Reset,@ConIn,@ConOut,@RdrIn,@PchOut,@LstOut
+             PUBLIC     @ConDir,@GetIOB,@SetIOB,@PrtStr,@RdStr,@ConStat,@GetVer
+             PUBLIC     @ResetDsk,@SelectDsk,@FileOpn,@FileCls,@FindFirst,@FindNext
+             PUBLIC     @FileDel,@SeqRd,@SeqWr,@FileMak,@FileRen,@GetLogin
+             PUBLIC     @GetCurDisk,@SetDMA,@UserNum
 
 
 
@@ -134,7 +139,7 @@ FileOpen     MACRO      FCBadd               ;; Open File
              ENDM
 
 
-FileClose      MACRO      FCBadd               ;; Close File
+FileCls      MACRO      FCBadd               ;; Close File
 
              IFNB       <FCBadd>             ;; Skip if no argument
              LD         DE,FCBadd            ;; Sys call argument
@@ -197,10 +202,11 @@ SetDMA       MACRO      DMAaddress           ;; Set DMA
 ;               Local Equates
 ;               =============
 @RecSize     EQU        0080H                ; CPM Record Size
-@FCB1        EQU        005CH                ; FCB1 in Cmd Tail
-@FCB2        EQU        006CH                ; FCB2 in Cmd Tail
+@TPA         EQU        0100h                ; Transient Program Area Start
+@BOOT        EQU        0000h                ; System reboot
+@FCB1        EQU        005ch                ; first file name
+@FCB2        EQU        006ch                ; second file name
 
-@WBOOT        EQU        0000h                ; system reboot
 
 @BDOS        EQU        0005h                ; BDOS entry point
 @Reset       EQU        00H                  ; System Reset
@@ -234,5 +240,10 @@ SetDMA       MACRO      DMAaddress           ;; Set DMA
 @UserNum     EQU        20H                  ; Set/Get User Code
 
 
+             PUBLIC     SysReset,ConIn,ConOut,RdrIn,PchOut,LstOut
+             PUBLIC     ConInDir,ConOutDir,GetIOB,SetIOB,PrtStr
+             PUBLIC     FileOpen,FileCls,FileDel
+             PUBLIC     SeqRd,SeqWr,FileMak
+             PUBLIC     SetDMA
 
 ;**************************************************************************

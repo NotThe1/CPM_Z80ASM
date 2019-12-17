@@ -1,0 +1,68 @@
+INT_VALUE    EQU        4567
+
+START:
+             CALL       incASCIIline
+             HALT
+
+
+
+incASCIIline:
+
+NUM_DIGITS   EQU        4
+NUM_UNITS    EQU        asciiLineNum0 + NUM_DIGITS -1;point at units
+             LD         B,NUM_DIGITS1        ; load limit
+             LD         A,39H                ; out of decimal range
+
+             LD         HL,NUM_UNITS         ; start at units
+incASCIIline1:
+             INC        (HL)
+             CP         (HL)                 ; still a decimal ?
+             RET        NC                   ; yes, we are done
+             LD         (HL),30H             ; make this zero
+             DEC        HL                   ; do next position
+             DJNZ       incASCIIline1
+             RET
+asciiLineNum0:
+             DB         '7999',00
+			 
+			 
+			 
+;===========================================================================
+ENTER:
+
+             LD         HL,INT_VALUE
+             LD         DE,1000
+             CALL       asciiDigit
+             LD         (asciiLineNum),A     ; set Thousands
+
+             LD         DE,100
+             CALL       asciiDigit
+             LD         (asciiLineNum +1),A  ; set Hundreds
+
+             LD         DE,10
+             CALL       asciiDigit
+             LD         (asciiLineNum +2),A  ; set Tens
+
+             LD         A,L                  ; get tens remainder
+             ADD        30H                  ; make remainder ascii
+             LD         (asciiLineNum +3),A  ; set Units
+
+             HALT
+
+
+
+
+; Called with value in HL and unit base in DE
+; returns unit digit in ACC, and HL =>  value MOD unit base
+asciiDigit:
+             LD         A,2FH                ; seed the number
+asciiDigit1:
+             INC        A                    ; increment the ascii number
+             OR         A                    ; set CY => 0
+             SBC        HL,DE                ; subtract unit base from value
+             JR         NC,asciiDigit1       ; do again if result GT unit base
+             ADD        HL,DE                ; restore HL to value MOD unit base
+             RET                             ; exit
+
+asciiLineNum:
+             DS         4                    ; max line number is 9999

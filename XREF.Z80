@@ -1,0 +1,223 @@
+; XREF.Z80
+
+
+; Amendment Record
+; *****************
+; Name          Date            Details of Amendment
+; ----          ----            ---------------------
+;
+; Frank Martyn  2019-12-17     Added line numbers
+; Frank Martyn  2019-12-13     Initial coding
+
+
+
+;               ==============
+;               External Files
+;               ==============
+
+             .XLIST
+             include    MAC-SC.LIB
+             include    MyMac1.LIB
+             .LIST
+;            ===================
+;            External Referances
+;            ===================
+
+             EXTRN      Prt00,PrtNL
+
+;               =============
+;               Local Equates
+;               =============
+
+
+
+FCBsrc       EQU        @FCB1                ; source fcb
+srcType      EQU        @FCB1 + 9            ; Source file type
+stackSize    EQU        20H                  ; depth of stack
+FALSE        EQU        0                    ; False
+TRUE         EQU        -1                   ; True
+
+CR           EQU        0DH                  ; Carriage Return
+LF           EQU        0AH                  ; New Line
+SPACE        EQU        020H                 ; Space character
+
+lineSize     EQU        132                  ; max size of line
+;**************************************************************************
+START:
+             LD         SP,stackTop
+             CALL       SetupFiles           ; set up Files
+             CALL       InitLine             ; charCount, linePtr
+Loop1:
+             CALL       ReadBuff             ; resets pointers & fills buffer
+Loop2:
+             CALL       GetChar              ; char in Acc, EOL if ZFlag set
+             LD         HL,(linePtr)
+             JR         Z,LineEnd            ; jump if eol
+             LD         (HL),A               ; put char in line
+             INC        HL
+             LD         (linePtr),HL         ; update the pointer
+             JR         Loop2                ; go for more
+
+LineEnd:
+             LD         (HL),00              ; null terminate the line
+
+             CALL       incASCIIline
+             LD         HL,asciiLineNum      ; point at the line lineBuffer
+
+             CALL       Prt00                ; print the line
+             CALL       PrtNL                ; New Line
+
+             CALL       InitLine
+             JR         Loop2
+
+             HALT
+
+
+
+
+; Returns with ZFlag set if end of line
+GetChar:
+             LD         A,(readCount)        ; Get count
+             CP         @RecSize             ; still have data?
+             JR         C,GetChar1           ; jump if yes
+             CALL       ReadBuff             ; resets pointers & fills buffer
+
+GetChar1:
+
+             LD         HL,(readPtr)         ; point at next posiion
+             LD         A,(HL)               ; get the char
+             CP         CR                   ; is it CR ?
+             JR         NZ,GetChar2          ; if no jump
+
+             CALL       AdjustPtrs           ; skip char if Yes
+             LD         A,(HL)               ; get the next char
+
+GetChar2:
+             CALL       AdjustPtrs           ; update pointers
+             CP         A,LF                 ; is the char a line Feed
+             RET                             ; Set ZFlag if EOL
+
+AdjustPtrs:
+
+             PUSH       AF
+
+             LD         A,(readCount)        ; increment the
+             INC        A                    ;  the
+             LD         (readCount),A        ;    Read Count
+
+             INC        HL                   ; increment the the
+             LD         (readPtr),HL         ;    Read Pointer
+
+             POP        AF
+             RET
+
+
+
+
+;**************************************************************************
+ReadBuff:
+             LD         HL,readBuffer
+             LD         (readPtr),HL         ; reaset the pointer
+             XOR        A
+             LD         (readCount),A        ; reset the Count
+             SetDMA     readBuffer           ; reset the DMA
+             SeqRd      FCBsrc               ; read a record
+             OR         A
+             JP         NZ,Finished          ; jump if at end-of-file
+             RET
+
+InitLine:
+             XOR        A
+             LD         (charCount),A        ; clear char count
+             LD         HL,lineBuffer
+             LD         (linePtr),HL         ; set line pointer
+             RET
+
+SetupFiles:
+             CopyMem    @FCB1,FCBdst,010H    ; setup destination FCB
+
+             XOR        A
+             LD         (curRec),A           ; Set current rec = 0
+             CopyMeM    $PRN,dstType,typeSize
+
+; source and destination  FCBs ready
+; check source file type
+             LD         A,SPACE
+             LD         HL,srcType           ; point at file type
+             CP         (HL)                 ; is there one ?
+             JR         NZ,SetupFiles1       ; skip if there is
+             copyMem    $Z80,srcType,typeSize
+SetupFiles1:
+             FileOpen   FCBsrc               ; Open Source File
+             LD         DE,$NoSrc            ; ready message
+             INC        A                    ; 255 becomes 0
+             CALL       Z, Exit              ; done if no file
+;; source file open, prep destination
+;            FileDel   FCBdst                 ; Delete Destination
+;            FileMak   FCBdst                 ; Create Destination
+;            LD        DE,$NoDirSpc           ; ready message
+;            INC       A                      ; 255 becomes 0
+;            CALL      Z, Exit                ; done if no dir space
+             RET
+;-------------------------------------------------------
+
+NUM_DIGITS   EQU        4
+NUM_UNITS    EQU        asciiLineNum + NUM_DIGITS -1;point at units
+
+incASCIIline:
+             LD         B,NUM_DIGITS        ; load limit
+             LD         A,39H                ; out of decimal range
+
+             LD         HL,NUM_UNITS         ; start at units
+incASCIIline1:
+             INC        (HL)
+             CP         (HL)                 ; still a decimal ?
+             RET        NC                   ; yes, we are done
+             LD         (HL),30H             ; make this zero
+             DEC        HL                   ; do next position
+             DJNZ       incASCIIline1
+             RET
+; write message given in DE, then reboot
+Finished:
+             FileClose  FCBsrc
+             FileClose  FCBdst
+             LD         DE,$Finished
+Exit:
+             PrtStr
+             JP         @WBOOT               ; exit, via warm boot
+
+;**************************************************************************
+$Z80         DB         "Z80"
+$PRN:        DB         "PRN"
+typeSize     EQU        $-$PRN
+$NoSrc:      DB         'No source file$'
+$Finished    DB         'Job Complete$'
+
+;             ORG        (($/0100H)+1) * 0100H
+             DSEG
+
+FCBdst:
+dstDisk:     DS         1                    ; Disk for output
+dstName:     DS         8                    ; output file name
+dstType:     DS         3                    ; output file type
+dstRest      DS         14H                  ; rest of  fcb
+curRec:      DS         1                    ; output current record
+;*********************************************
+
+stackBottom:
+             DS         stackSize            ; 16 level Stack
+stackTop:                                    ; top of Stack
+;*********************************************
+
+readCount    DS         1                    ; keep count of number of buffer chars used
+readPtr:     DS         2                    ; current read buffer index
+readBuffer:  DS         @RecSize             ; start of working buffer
+lineCount    DS         2                    ; Source file line count
+charCount    DS         1                    ; number of characters in the line
+linePtr:     DS         2                    ; current line buffer index
+asciiLineNum:
+             DB         '0000 '
+lineBuffer:  DS         lineSize             ; line buffer
+
+
+             END

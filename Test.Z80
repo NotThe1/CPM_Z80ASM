@@ -1,0 +1,79 @@
+; Test.Z80
+
+
+; Amendment Record
+; *****************
+; Name          Date            Details of Amendment
+; ----          ----            ---------------------
+; Frank Martyn  2019-12-13     Initial coding
+
+
+
+;               ==============
+;               External Files
+;               ==============
+
+             .XLIST
+;             include    MAC-SC.LIB
+;             include    MyMac.LIB
+             .LIST
+;            ===================
+;            External Referances
+;            ===================
+
+             EXTRN      Prt00,PrtNL,PrtNLT,PrtAcc
+
+;               =============
+;               Local Equates
+;               =============
+
+stackSize    EQU        20H                  ; depth of stack
+FALSE        EQU        0                    ; False
+TRUE         EQU        -1                   ; True
+
+NULL         EQU        00                   ;
+CR           EQU        0DH                  ; New Line
+;**************************************************************************
+                                             ;           ORG       TPA
+
+START:
+             LD         SP,stackTop
+             LD         HL,msg1
+             CALL       Prt00
+
+             CALL       PrtNL
+
+             LD         HL,msg2
+             CALL       PrtNLT
+
+             LD         HL,msg3
+             LD         A,'@'
+             CALL       PrtAcc
+
+; write message given in DE, then reboot
+Exit:
+
+             JP         0000                 ; exit, via warm boot
+
+;               =============
+;                 Constants
+;               =============
+; console messages
+msg1:        DB         'Null Terminated Message.',NULL
+msg2:        DB         'CR/LF Terminated Message.',0DH,0AH
+msg3:        DB         'Terminate message with at sign@'
+;               =============
+;                   Data
+;               =============
+
+;             ORG        (($/0100H)+1) * 0100H
+             DSEG
+
+
+
+stackBottom:
+             DS         stackSize            ; 16 level Stack
+stackTop:                                    ; top of Stack
+
+
+             END
