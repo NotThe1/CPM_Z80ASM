@@ -1,3 +1,4 @@
+
 ; XREF.Z80
 
 
@@ -10,20 +11,21 @@
 ; Frank Martyn  2019-12-13     Initial coding
 
 
-
+             .XLIST
 ;               ==============
 ;               External Files
 ;               ==============
 
-             .XLIST
+
              include    MAC-SC.LIB
              include    MyMac1.LIB
-             .LIST
+
 ;            ===================
-;            External Referances
+;            External References
 ;            ===================
 
              EXTRN      Prt00,PrtNL
+             EXTRN      ConNL
 
 ;               =============
 ;               Local Equates
@@ -31,18 +33,22 @@
 
 
 
-FCBsrc       EQU        @FCB1                ; source fcb
-srcType      EQU        @FCB1 + 9            ; Source file type
 stackSize    EQU        20H                  ; depth of stack
 FALSE        EQU        0                    ; False
 TRUE         EQU        -1                   ; True
 
-CR           EQU        0DH                  ; Carriage Return
+NULL         EQU        00H                  ; ASCII NUL
 LF           EQU        0AH                  ; New Line
+CR           EQU        0DH                  ; Carriage Return
 SPACE        EQU        020H                 ; Space character
+SEMI_COLON   EQU        3BH                  ; Semicolon
+ASTERISK     EQU        '*'                  ; Asterisk
 
 lineSize     EQU        132                  ; max size of line
+SYMBOL_SIZE  EQU        15                   ; Defined in ZMAC manual page 16 (20)
+
 ;**************************************************************************
+             .LIST
 START:
              LD         SP,stackTop
              CALL       SetupFiles           ; set up Files
@@ -52,16 +58,20 @@ Loop1:
 Loop2:
              CALL       GetChar              ; char in Acc, EOL if ZFlag set
              LD         HL,(linePtr)
-             JR         Z,LineEnd            ; jump if eol
+             JR         Z,LineEnd            ; jump if EOL
              LD         (HL),A               ; put char in line
              INC        HL
              LD         (linePtr),HL         ; update the pointer
              JR         Loop2                ; go for more
-
+;======================================================================
 LineEnd:
              LD         (HL),00              ; null terminate the line
 
              CALL       incASCIIline
+
+             CALL       idSymbol
+             CALL       NZ,GetSymbol
+;LineEnd1:
              LD         HL,asciiLineNum      ; point at the line lineBuffer
 
              CALL       Prt00                ; print the line
@@ -71,8 +81,65 @@ LineEnd:
              JR         Loop2
 
              HALT
+;--------------------------------------------------------------------------------
+GetSymbol:
+             CALL       InitHotSymbol        ; fill with spaces
+             CALL       GetSymbolSize        ; how big is it ?
+             CALL       LoadHotSymbol
 
+;**********************
+             LD         DE,hotSymbol
+             LD         C,09
+             CALL       0005H
+             CALL       ConNL
+;**********************
+             RET
+InitHotSymbol:
+             LD         HL,hotSymbol
+             LD         (HL),SPACE
+             LD         DE,hotSymbol + 1
+             LD         BC,SYMBOL_SIZE -1
+             LDIR
+             RET
+LoadHotSymbol:
+             LD         HL,lineBuffer        ;point at start of symbol
+             LD         DE,hotSymbol
+             LDIR                            ; BC set before call
+             RET
 
+GetSymbolSize:
+             LD         A,SPACE              ; delimiter
+             LD         BC,SYMBOL_SIZE       ; max length of symbol
+GetSymbolSize1:
+             LD         HL,lineBuffer        ;point at start of symbol
+             CPIR                            ; CY = 0
+             JP         M,GetSymbolSize2     ; no Delim found
+             LD         HL,SYMBOL_SIZE
+             SBC        HL,BC
+             DEC        HL                   ; move back before Delim
+             PUSH       HL
+             POP        BC                   ; move results to BC
+             RET
+
+GetSymbolSize2:
+;             CP         A,SPACE              ; first pass check SPACE
+;             LD         A,NULL               ; second pass NULL
+;             JR         NZ,GetSymbolSize1    ; check for NULL terminator
+;             LD         BC,SYMBOL_SIZE       ; max length of symbol
+             RET                             ; MAX Symbol size
+VERY_LARGE_SYMbol_token:
+; **************************************
+idSymbol:
+             LD         HL,lineBuffer        ; point at start of the line
+             LD         A,SPACE              ; SPACE ?
+             CP         (HL)                 ; Is it a space ?
+             RET        Z                    ; not a symbol
+             LD         A,SEMI_COLON         ; SemiColon
+             CP         (HL)                 ; Is it a space ?
+             RET        Z                    ; not a symbol
+             LD         A,NULL               ; Hex 00
+             CP         (HL)                 ; Is it a space ?
+             RET
 
 
 ; Returns with ZFlag set if end of line
@@ -134,11 +201,15 @@ InitLine:
              RET
 
 SetupFiles:
+             CopyMem    @FCB1,FCBsrc,010H    ; set up source file FCB
+             XOR        A
+             LD         (dstCurRec),A        ; Set current rec = 0
+
              CopyMem    @FCB1,FCBdst,010H    ; setup destination FCB
 
              XOR        A
-             LD         (curRec),A           ; Set current rec = 0
-             CopyMeM    $PRN,dstType,typeSize
+             LD         (dstCurRec),A        ; Set current rec = 0
+             CopyMeM    XRF,dstType,typeSize ; Set dest type to  to XRF
 
 ; source and destination  FCBs ready
 ; check source file type
@@ -146,10 +217,10 @@ SetupFiles:
              LD         HL,srcType           ; point at file type
              CP         (HL)                 ; is there one ?
              JR         NZ,SetupFiles1       ; skip if there is
-             copyMem    $Z80,srcType,typeSize
+             copyMem    Z80,srcType,typeSize
 SetupFiles1:
              FileOpen   FCBsrc               ; Open Source File
-             LD         DE,$NoSrc            ; ready message
+             LD         DE,msgNoSrc          ; ready message
              INC        A                    ; 255 becomes 0
              CALL       Z, Exit              ; done if no file
 ;; source file open, prep destination
@@ -165,7 +236,7 @@ NUM_DIGITS   EQU        4
 NUM_UNITS    EQU        asciiLineNum + NUM_DIGITS -1;point at units
 
 incASCIIline:
-             LD         B,NUM_DIGITS        ; load limit
+             LD         B,NUM_DIGITS         ; load limit
              LD         A,39H                ; out of decimal range
 
              LD         HL,NUM_UNITS         ; start at units
@@ -181,27 +252,34 @@ incASCIIline1:
 Finished:
              FileClose  FCBsrc
              FileClose  FCBdst
-             LD         DE,$Finished
+             LD         DE,msgDone
 Exit:
              PrtStr
              JP         @WBOOT               ; exit, via warm boot
 
 ;**************************************************************************
-$Z80         DB         "Z80"
-$PRN:        DB         "PRN"
-typeSize     EQU        $-$PRN
-$NoSrc:      DB         'No source file$'
-$Finished    DB         'Job Complete$'
+Z80:         DB         "Z80"
+XRF:         DB         "XRF"
+typeSize:    EQU        $-XRF
+msgNoSrc:    DB         'No source file$'
+msgDone:     DB         'Job Complete$'
 
 ;             ORG        (($/0100H)+1) * 0100H
              DSEG
+
+FCBsrc:
+srcDisk:     DS         1                    ; Disk for output
+srcName:     DS         8                    ; output file name
+srcType:     DS         3                    ; output file type
+srcRest      DS         14H                  ; rest of  fcb
+srcCurRec:   DS         1                    ; output current record
 
 FCBdst:
 dstDisk:     DS         1                    ; Disk for output
 dstName:     DS         8                    ; output file name
 dstType:     DS         3                    ; output file type
 dstRest      DS         14H                  ; rest of  fcb
-curRec:      DS         1                    ; output current record
+dstCurRec:   DS         1                    ; output current record
 ;*********************************************
 
 stackBottom:
@@ -212,12 +290,17 @@ stackTop:                                    ; top of Stack
 readCount    DS         1                    ; keep count of number of buffer chars used
 readPtr:     DS         2                    ; current read buffer index
 readBuffer:  DS         @RecSize             ; start of working buffer
+
 lineCount    DS         2                    ; Source file line count
 charCount    DS         1                    ; number of characters in the line
 linePtr:     DS         2                    ; current line buffer index
+
 asciiLineNum:
              DB         '0000 '
 lineBuffer:  DS         lineSize             ; line buffer
 
-
+hotSymbol:   DS         SYMBOL_SIZE
+             DB         "$"
+symbolCount: DS         2                    ; number of symbols
+symbols:
              END

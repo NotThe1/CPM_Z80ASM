@@ -9,8 +9,8 @@ START:
 incASCIIline:
 
 NUM_DIGITS   EQU        4
-NUM_UNITS    EQU        asciiLineNum0 + NUM_DIGITS -1;point at units
-             LD         B,NUM_DIGITS1        ; load limit
+NUM_UNITS    EQU        asciiLineNum + NUM_DIGITS -1;point at units
+             LD         B,NUM_DIGITS        ; load limit
              LD         A,39H                ; out of decimal range
 
              LD         HL,NUM_UNITS         ; start at units
@@ -23,7 +23,7 @@ incASCIIline1:
              DJNZ       incASCIIline1
              RET
 asciiLineNum0:
-             DB         '7999',00
+             DB         '0000 '
 			 
 			 
 			 

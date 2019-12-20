@@ -12,7 +12,8 @@
 ; Name          Date            Details of Amendment
 ; ----          ----            ---------------------
 ;
-; Frank Martyn  2019-12-14    PrtNL,PrtAcc
+; Frank Martyn  2019-12-18     ConNL
+; Frank Martyn  2019-12-14     PrtNL,PrtAcc
 ; Frank Martyn  2019-12-13     Prt00,PrtNLT
 ; Frank Martyn  2019-11-14     Initial edit
 ;
@@ -32,7 +33,10 @@
 ;   PrtAcc Prints string pointed at by HL, with terminator character in Acc
 ;     HL is not saved, but BC and DE are saved
 
+;   ConNL Display New Line on Console. The registers are not saved
 
+;   Con$ Display a '$' terminated string pointed at by HL on the console
+;     The registers are not saved
 ;
 
 
@@ -45,11 +49,12 @@
 ;      ===============
 
              PUBLIC     Prt00,PrtNLT,PrtNL,PrtAcc
+             PUBLIC     Con$,ConNL
 
 ;      n o n e
 
 ;      ===================
-;      External Referances
+;      External References
 ;      ===================
 
 ;
@@ -65,8 +70,11 @@
 
 CR           EQU        0DH                  ; Carriage Return
 LF           EQU        0AH                  ; New Line
+DOLLAR       EQU        '$'                  ; Dollar
+
 BDOS         EQU        0005H                ; Dos entry
 LstOut       EQU        05H                  ; List Out
+ConOut       EQU        02H                  ; Console Out
 ;**************************************************************************
 
 PrtNLT:      LD         A,CR                 ; New Line
@@ -112,3 +120,35 @@ PrtNL:
              LD         C,LstOut             ; Sys call number list out
              CALL       BDOS                 ; output the New Line
              RET
+
+ConNL:
+             LD         E,CR
+             LD         C,ConOut             ; Sys call number list out
+             CALL       BDOS                 ; output the New Line
+
+             LD         E,LF
+             LD         C,ConOut             ; Sys call number list out
+             CALL       BDOS                 ; output the New Line
+             RET
+
+; Send a $ terminated string to the console Pointer in DE
+Con$:
+             LD         BC,132               ; limit output
+             EX         DE,HL
+
+Con$1:
+             LD         E,(HL)               ; Char to print
+             LD         A,DOLLAR             ; terminator
+             CPI                             ; at terminator ?
+             RET        Z                    ; done if yes
+             RET        PO                   ; done if exceed max size
+
+
+             PUSH       HL
+             PUSH       BC                   ; save parameters
+             LD         C,ConOut
+             CALL       BDOS                 ; Send to console
+             POP        BC
+             POP        HL
+
+             JR         Con$1                ; loop for more

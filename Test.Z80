@@ -8,68 +8,93 @@
 ; Frank Martyn  2019-12-13     Initial coding
 
 
-
+             .XLIST
 ;               ==============
 ;               External Files
 ;               ==============
 
-             .XLIST
+
 ;             include    MAC-SC.LIB
 ;             include    MyMac.LIB
-             .LIST
+
 ;            ===================
-;            External Referances
+;            External References
 ;            ===================
 
-             EXTRN      Prt00,PrtNL,PrtNLT,PrtAcc
+                                             ;            EXTRN      Prt00,PrtNL,PrtNLT,PrtAcc
 
 ;               =============
 ;               Local Equates
 ;               =============
+ConOut       EQU        02H                  ; Console Out
+BDOS         EQU        0005H
 
 stackSize    EQU        20H                  ; depth of stack
 FALSE        EQU        0                    ; False
 TRUE         EQU        -1                   ; True
 
-NULL         EQU        00                   ;
+NULL         EQU        00                   ; 00H
+LF           EQU        0AH                  ; Carriage Return
 CR           EQU        0DH                  ; New Line
+SPACE        EQU        20H                  ; SPACE
+DOLLAR       EQU        '$'                  ; Dollar
+lineSize     EQU        132                  ; max size of line
+SYMBOL_SIZE  EQU        15                   ; Defined in ZMAC manual page 16 (20)
 ;**************************************************************************
                                              ;           ORG       TPA
-
+             .LIST
 START:
              LD         SP,stackTop
-             LD         HL,msg1
-             CALL       Prt00
+             LD         DE,Msg1
+             CALL       Con$
+             LD         DE,Msg2
+             CALL       Con$
 
-             CALL       PrtNL
+             CALL       ConNL
 
-             LD         HL,msg2
-             CALL       PrtNLT
+             LD         DE,Msg3
+             CALL       Con$
+             HALT
 
-             LD         HL,msg3
-             LD         A,'@'
-             CALL       PrtAcc
+; Send a $ terminated string to the console Pointer in DE
+Con$:
+             LD         BC,132               ; limit output
+             EX         DE,HL
 
-; write message given in DE, then reboot
-Exit:
-
-             JP         0000                 ; exit, via warm boot
-
-;               =============
-;                 Constants
-;               =============
-; console messages
-msg1:        DB         'Null Terminated Message.',NULL
-msg2:        DB         'CR/LF Terminated Message.',0DH,0AH
-msg3:        DB         'Terminate message with at sign@'
-;               =============
-;                   Data
-;               =============
-
-;             ORG        (($/0100H)+1) * 0100H
-             DSEG
+Con$1:
+             LD         E,(HL)               ; Char to print
+             LD         A,DOLLAR             ; terminator
+             CPI                             ; at terminator ?
+             RET        Z                    ; done if yes
+             RET        PO                   ; done if exceed max size
 
 
+             PUSH       HL
+             PUSH       BC                   ; save parameters
+             LD         C,ConOut
+             CALL       BDOS                 ; Send to console
+             POP        BC
+             POP        HL
+
+             JR         Con$1                ; loop for more
+
+
+;==========================================
+ConNL:
+             LD         E,CR
+             LD         C,ConOut             ; Sys call number Con out
+             CALL       BDOS                 ; output the New Line
+
+             LD         E,LF
+             LD         C,ConOut             ; Sys call number CON out
+             CALL       BDOS                 ; output the New Line
+             RET
+
+;==========================================
+
+Msg1:        DB         'HELLO ',DOLLAR
+Msg2:        DB         'WORLD',DOLLAR
+Msg3         DB         'Next Line.',CR,LF,DOLLAR
 
 stackBottom:
              DS         stackSize            ; 16 level Stack
