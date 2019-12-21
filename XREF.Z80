@@ -112,8 +112,8 @@ GetSymbolSize:
              LD         BC,SYMBOL_SIZE       ; max length of symbol
 GetSymbolSize1:
              LD         HL,lineBuffer        ;point at start of symbol
-             CPIR                            ; CY = 0
-             JP         M,GetSymbolSize2     ; no Delim found
+             CPIR                            ; CY = 0  ++++++++++++++++++????????????????????----------------_
+             JP         PO,GetSymbolSize2     ; no Delim found
              LD         HL,SYMBOL_SIZE
              SBC        HL,BC
              DEC        HL                   ; move back before Delim

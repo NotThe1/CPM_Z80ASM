@@ -12,6 +12,7 @@
 ; Name          Date            Details of Amendment
 ; ----          ----            ---------------------
 ;
+; Frank Martyn  2019-12-21     Prt$,Con00,   removed PrtAcc
 ; Frank Martyn  2019-12-18     ConNL
 ; Frank Martyn  2019-12-14     PrtNL,PrtAcc
 ; Frank Martyn  2019-12-13     Prt00,PrtNLT
@@ -22,23 +23,20 @@
 ; ***************
 ;       Library of Utilities
 
-;   PrtNL Prints a New Line. The registers are not saved
-
-;   Prt00 Prints a null terminated string pointed at by HL
-;     HL is not saved, but BC and DE are saved
-
-;   PrtNLT Prints a CR or LF terminated string pointed at by HL
-;     HL is not saved, but BC and DE are saved
-
-;   PrtAcc Prints string pointed at by HL, with terminator character in Acc
-;     HL is not saved, but BC and DE are saved
-
-;   ConNL Display New Line on Console. The registers are not saved
-
-;   Con$ Display a '$' terminated string pointed at by HL on the console
+;   PrtNL Prints a New Line.
 ;     The registers are not saved
-;
 
+;   Prt00 Prints a null terminated string pointed at by DE
+;     The registers are not saved
+
+;   Prt$ Display a '$' terminated string pointed at by DE on the List device
+;     The registers are not saved
+
+;   ConNL Display New Line on Console.
+;     The registers are not saved
+
+;   Con00 Display a null terminated string pointed at by DE on the console
+;     The registers are not saved
 
 ;
 
@@ -48,8 +46,8 @@
 ;      Global symbols.
 ;      ===============
 
-             PUBLIC     Prt00,PrtNLT,PrtNL,PrtAcc
-             PUBLIC     Con$,ConNL
+             PUBLIC     Prt00,Prt$,PrtNL
+             PUBLIC     Con00,ConNL
 
 ;      n o n e
 
@@ -68,6 +66,7 @@
 ;      Local Equates
 ;      =============
 
+NULL         EQU        00                   ; 00H
 CR           EQU        0DH                  ; Carriage Return
 LF           EQU        0AH                  ; New Line
 DOLLAR       EQU        '$'                  ; Dollar
@@ -77,39 +76,51 @@ LstOut       EQU        05H                  ; List Out
 ConOut       EQU        02H                  ; Console Out
 ;**************************************************************************
 
-PrtNLT:      LD         A,CR                 ; New Line
-             JR         PrtAcc               ; go to main part
+
+
 Prt00:
-             XOR        A                    ; put null into ACC
-; Called with HL pointing to  String, and ACC containg terminator
-PrtAcc:
-             PUSH       BC                   ; Save Reg
-             PUSH       DE                   ; Save Reg
-             PUSH       AF                   ; Save The Terminal character
-PrintLine:
-             POP        AF                   ; Get The Terminal character
-             LD         E,(HL)               ; put output char in E for sys call
-             CP         E                    ; is character the terminator?
-             JR         Z,PrintLineX         ; we are done if yes
-             PUSH       AF                   ; Save The Terminal character
-             INC        HL
-             PUSH       HL                   ; save next char position
-             LD         C,LstOut             ; Sys call number list out
-             CALL       BDOS                 ; output the character
-             POP        HL                   ; restore the pointer
-             JR         PrintLine            ; go back for more
+             LD         BC,255               ; limit output
+             EX         DE,HL
 
-PrintLineX:                                  ; Exit
-             LD         A,CR                 ; Carriage Return
-             CP         E
-             CALL       Z,PrtNL              ; output crlf if yes
-             LD         A,LF                 ; New Line ?
-             CP         E
-             CALL       Z,PrtNL              ; output crlf if yes
+Prt00A:
+             LD         E,(HL)               ; Char to print
+             LD         A,NULL               ; terminator
+             CPI                             ; at terminator ?
+             RET        Z                    ; done if yes
+             RET        PO                   ; done if exceed max size
 
-             POP        DE                   ; Restore Reg
-             POP        BC                   ; Restore Reg
-             RET                             ; Exit
+
+             PUSH       HL
+             PUSH       BC                   ; save parameters
+             LD         C,LstOut
+             CALL       BDOS                 ; Send to console
+             POP        BC
+             POP        HL
+
+             JR         Prt00A               ; loop for more
+;=============================
+
+Prt$:
+             LD         BC,255               ; limit output
+             EX         DE,HL
+
+Prt$0:
+             LD         E,(HL)               ; Char to print
+             LD         A,DOLLAR             ; terminator
+             CPI                             ; at terminator ?
+             RET        Z                    ; done if yes
+             RET        PO                   ; done if exceed max size
+
+
+             PUSH       HL
+             PUSH       BC                   ; save parameters
+             LD         C,LstOut
+             CALL       BDOS                 ; Send to console
+             POP        BC
+             POP        HL
+
+             JR         Prt$0                ; loop for more
+;=============================
 
 PrtNL:
              LD         E,CR
@@ -120,6 +131,8 @@ PrtNL:
              LD         C,LstOut             ; Sys call number list out
              CALL       BDOS                 ; output the New Line
              RET
+;=============================
+
 
 ConNL:
              LD         E,CR
@@ -130,6 +143,8 @@ ConNL:
              LD         C,ConOut             ; Sys call number list out
              CALL       BDOS                 ; output the New Line
              RET
+;=============================
+
 
 ; Send a $ terminated string to the console Pointer in DE
 Con$:
@@ -152,3 +167,25 @@ Con$1:
              POP        HL
 
              JR         Con$1                ; loop for more
+;==============================
+
+Con00:
+             LD         BC,255               ; limit output
+             EX         DE,HL
+
+Con00A:
+             LD         E,(HL)               ; Char to print
+             LD         A,NULL               ; terminator
+             CPI                             ; at terminator ?
+             RET        Z                    ; done if yes
+             RET        PO                   ; done if exceed max size
+
+
+             PUSH       HL
+             PUSH       BC                   ; save parameters
+             LD         C,ConOut
+             CALL       BDOS                 ; Send to console
+             POP        BC
+             POP        HL
+
+             JR         Con00A               ; loop for more
