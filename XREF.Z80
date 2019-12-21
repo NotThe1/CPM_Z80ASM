@@ -1,6 +1,7 @@
 
 ; XREF.Z80
-
+;======================================================================
+token:
 
 ; Amendment Record
 ; *****************
@@ -72,7 +73,7 @@ LineEnd:
              CALL       idSymbol
              CALL       NZ,GetSymbol
 ;LineEnd1:
-             LD         HL,asciiLineNum      ; point at the line lineBuffer
+             LD         DE,asciiLineNum      ; point at the line lineBuffer
 
              CALL       Prt00                ; print the line
              CALL       PrtNL                ; New Line
@@ -109,11 +110,11 @@ LoadHotSymbol:
 
 GetSymbolSize:
              LD         A,SPACE              ; delimiter
-             LD         BC,SYMBOL_SIZE       ; max length of symbol
 GetSymbolSize1:
+             LD         BC,SYMBOL_SIZE       ; max length of symbol
              LD         HL,lineBuffer        ;point at start of symbol
-             CPIR                            ; CY = 0  ++++++++++++++++++????????????????????----------------_
-             JP         PO,GetSymbolSize2     ; no Delim found
+             CPIR
+             JP         NZ,GetSymbolSize2    ; no Delim found
              LD         HL,SYMBOL_SIZE
              SBC        HL,BC
              DEC        HL                   ; move back before Delim
@@ -122,12 +123,12 @@ GetSymbolSize1:
              RET
 
 GetSymbolSize2:
-;             CP         A,SPACE              ; first pass check SPACE
-;             LD         A,NULL               ; second pass NULL
-;             JR         NZ,GetSymbolSize1    ; check for NULL terminator
-;             LD         BC,SYMBOL_SIZE       ; max length of symbol
+             CP         A,SPACE              ; first pass check SPACE
+             LD         A,NULL               ; second pass NULL
+             JR         Z,GetSymbolSize1     ; check for NULL terminator
+             LD         BC,SYMBOL_SIZE       ; max length of symbol
              RET                             ; MAX Symbol size
-VERY_LARGE_SYMbol_token:
+;VERY_LARGE_SYMbol_token:
 ; **************************************
 idSymbol:
              LD         HL,lineBuffer        ; point at start of the line
@@ -151,7 +152,7 @@ GetChar:
 
 GetChar1:
 
-             LD         HL,(readPtr)         ; point at next posiion
+             LD         HL,(readPtr)         ; point at next position
              LD         A,(HL)               ; get the char
              CP         CR                   ; is it CR ?
              JR         NZ,GetChar2          ; if no jump
