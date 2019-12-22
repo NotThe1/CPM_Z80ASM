@@ -1,7 +1,6 @@
 
 ; XREF.Z80
 ;======================================================================
-token:
 
 ; Amendment Record
 ; *****************
@@ -197,6 +196,7 @@ ReadBuff:
 InitLine:
              XOR        A
              LD         (charCount),A        ; clear char count
+             FillMem    lineBuffer,lineSize  ; clear the line buffer (00)
              LD         HL,lineBuffer
              LD         (linePtr),HL         ; set line pointer
              RET
