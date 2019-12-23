@@ -21,7 +21,7 @@
 ;
 ; Module Function
 ; ***************
-;       Library of Utilities
+;       Library of Subroutine Utilities
 
 ;   PrtNL Prints a New Line.
 ;     The registers are not saved
@@ -38,6 +38,16 @@
 ;   Con00 Display a null terminated string pointed at by DE on the console
 ;     The registers are not saved
 
+;   CmpStr - Compares two equal length strings
+;     The inputs are
+;       String A pointed at by REG DE
+;       String B pointed at by REG HL
+;    String length in Reg B. if 00 the string is 256 bytes long
+;     The output is
+;       String A = String B,  Acc = 0, ZFlag Set
+;       String A < String B,  Acc < 0, Sign Flag Set, ZFlag Reset
+;       String A > String B,  Acc > 0, Sign Flag Reset, ZFlag Reset
+;     The registers are not saved
 ;
 
              NAME       MyLib1
@@ -48,6 +58,7 @@
 
              PUBLIC     Prt00,Prt$,PrtNL
              PUBLIC     Con00,ConNL
+             PUBLIC     CmpStr
 
 ;      n o n e
 
@@ -189,3 +200,14 @@ Con00A:
              POP        HL
 
              JR         Con00A               ; loop for more
+;============================================================
+
+CmpStr:
+             LD         A,(DE)               ; obtain byte from String A
+             SUB        (HL)                 ; compare it to byte from String B
+             RET        NZ                   ; we are done if they are not equal
+             INC        DE                   ; adjust String A pointer
+             INC        HL                   ; adjust String B pointer
+             DJNZ       CmpStr               ; keep going if there is more
+             RET                             ; return, the strings are equal
+;==============================

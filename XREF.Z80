@@ -184,7 +184,7 @@ AdjustPtrs:
 ;**************************************************************************
 ReadBuff:
              LD         HL,readBuffer
-             LD         (readPtr),HL         ; reaset the pointer
+             LD         (readPtr),HL         ; reset the pointer
              XOR        A
              LD         (readCount),A        ; reset the Count
              SetDMA     readBuffer           ; reset the DMA
@@ -210,7 +210,7 @@ SetupFiles:
 
              XOR        A
              LD         (dstCurRec),A        ; Set current rec = 0
-             CopyMeM    XRF,dstType,typeSize ; Set dest type to  to XRF
+             CopyMeM    XRF,dstType,typeSize ; Set destination type to  to XRF
 
 ; source and destination  FCBs ready
 ; check source file type

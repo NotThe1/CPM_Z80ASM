@@ -24,6 +24,7 @@
 ;             EXTRN      Prt00,PrtNL,PrtNLT,PrtAcc
              EXTRN      Prt00,Prt$,PrtNLT,PrtNL,PrtAcc
              EXTRN      Con00,Con$,ConNL
+             EXTRN      CmpStr
 
 ;               =============
 ;               Local Equates
@@ -50,41 +51,54 @@ SYMBOL_SIZE  EQU        15                   ; Defined in ZMAC manual page 16 (2
 START:
              LD         SP,stackTop
 
-;            LD         DE,Msg1$
-;            CALL       Con$
-;            LD         DE,Msg2$
-;            CALL       Con$
-;
-;            CALL       ConNL
-;
-;            LD         DE,Msg3$
-;            CALL       Con$
-;            LD         DE,Msg3$
-;            CALL       Con$
-
-
-             LD         DE,Msg1
-             CALL       Con00
-             LD         DE,Msg2
-             CALL       Con00
-
-             CALL       ConNL
-
-             LD         DE,Msg3
-             CALL       Con00
-             LD         DE,Msg3
-             CALL       Con00
+             LD         DE,StringA1
+             LD         HL,StringB1
+             LD         B,10
+             CALL       ShowStrings
+             CALL       CmpStr
+             HALT
+             LD         DE,StringA2
+             LD         HL,StringB2
+             LD         B,10
+             CALL       ShowStrings
+             CALL       CmpStr
+             HALT
+             LD         DE,StringA3
+             LD         HL,StringB3
+             LD         B,10
+             CALL       ShowStrings
+             CALL       CmpStr
              HALT
 
 
+ShowStrings:
+             PUSH       BC
+             PUSH       HL
+             PUSH       DE
+             PUSH       HL
+             CALL       Prt$
+             LD         DE,msg1
+             CALL       Prt$
+             POP        DE
+             CALL       Prt$
+             POP        DE
+             POP        HL
+             POP        BC
+             RET
 
-Msg1:        DB         'Null ',NULL
-Msg2:        DB         'Terminated',NULL
-Msg3:        DB         'Next Null Terminated Line.',CR,LF,NULL
 
-Msg1$:       DB         'Dollar ',DOLLAR
-Msg2$:       DB         'Terminated',DOLLAR
-Msg3$:       DB         'Next DOLLAR Terminated Line.',CR,LF,DOLLAR
+
+;===========================================
+msg1         DB         " <= A | B => ",DOLLAR
+
+StringA1:    DB         "ABCDEFGHJKLMNO",DOLLAR
+StringB1:    DB         "ABCDEFGHJKLMNO",CR,LF,DOLLAR
+
+StringA2:    DB         "AACDEFGHJKLMNO",DOLLAR
+StringB2:    DB         "ABCDEFGHJKLMNO",CR,LF,DOLLAR
+
+StringA3:    DB         "ABCDEFGHJKLMNO",DOLLAR
+StringB3:    DB         "AACDEFGHJKLMNO",CR,LF,DOLLAR
 
 stackBottom:
              DS         stackSize            ; 16 level Stack
